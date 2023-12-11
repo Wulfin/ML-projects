@@ -34,7 +34,7 @@ df = pd.DataFrame(np.c_[cancer['data'], cancer['target']], columns=np.append(can
 # print(357 / len(df), 211/ len(df))
 
 #sns.countplot(data=df, x='target')
-plt.savefig('countplot.png')  # Save as PNG image
+#plt.savefig('countplot.png')  # Save as PNG image
 # plt.show()
 
 print(df.columns)
@@ -46,7 +46,7 @@ print(df.columns)
 # plt.show()
 
 print(df.corr()['target'].sort_values(ascending=False))
-df.corr()['target'][:-1].sort_values().plot(kind='bar')
+# df.corr()['target'][:-1].sort_values().plot(kind='bar')
 # plt.show()
 
 
@@ -79,10 +79,85 @@ print(classification_report(y_test, y_preds))
 cm = confusion_matrix(y_test, y_preds)
 print(cm)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-disp.plot()
-plt.show()
+# disp.plot()
+# plt.show()
 
 
 
 
 # IMPORTANT: Improving the model
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+
+# scaling the data to bring all the features to the same level of magnitude (between 0 and 1)
+scaled_X_train = scaler.fit_transform(X_train) 
+scaled_X_test = scaler.transform(X_test)
+
+# after scaling, as column names are removed. so we need to re-attach them
+scaled_X_train = pd.DataFrame(scaled_X_train, columns=X_train.columns)
+scaled_X_test = pd.DataFrame(scaled_X_test, columns=X_test.columns)
+# print(scaled_X_train.head())
+# print(scaled_X_test.head())
+
+# # Before Scaling
+# sns.scatterplot(data=X_train, x='mean area', y='mean smoothness', hue=y_train)
+# plt.savefig('scatterplot_Before_Scaling.png')
+# # After Scaling
+# sns.scatterplot(x=scaled_X_train['mean area'], y=scaled_X_train['mean smoothness'], hue=y_train)
+# plt.savefig('scatterplot_After_Scaling.png')
+
+
+
+
+# IMPORTANT: Re-Train the model on the scaled data
+print("\n\nRe-Training the model on the scaled data")
+svc_model.fit(scaled_X_train, y_train)
+y_preds = svc_model.predict(scaled_X_test)
+
+print(classification_report(y_test, y_preds))
+
+cm = confusion_matrix(y_test, y_preds)
+print(cm)
+# disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+# disp.plot()
+# plt.show()
+
+
+
+
+# IMPORTANT: Improving the model even more with GridSearchCV
+print("\n\nImproving the model even more with GridSearchCV")
+from sklearn.model_selection import GridSearchCV
+
+#help(SVC)
+# help(GridSearchCV)
+
+parameters = {
+    'C': [0.1, 1, 10, 50, 100, 150],
+    'kernel': ['poly', 'rbf', 'sigmoid'],
+    'degree': [3, 4, 5, 6],
+    'gamma': [0.0001, 0.001, 0.01, 0.1, 1, 10]
+}
+# refit the model based on based parameters found
+grid_model = GridSearchCV(SVC(), parameters, cv=5, refit=True, verbose=4) 
+grid_model.fit(scaled_X_train, y_train)
+
+# prints the best parameters 
+print(grid_model.best_params_)
+
+
+
+
+# IMPORTANT: Evaluating the model with the best parameters
+print("\n\nEvaluating the model with the best parameters")
+
+grid_predictions = grid_model.predict(scaled_X_test)
+
+print(classification_report(y_test, grid_predictions))
+
+cm = confusion_matrix(y_test, grid_predictions)
+print(cm)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot()
+plt.show()
