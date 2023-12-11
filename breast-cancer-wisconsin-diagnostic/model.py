@@ -161,3 +161,28 @@ print(cm)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
 plt.show()
+
+from sklearn.model_selection import RandomizedSearchCV
+from scipy import stats
+
+
+
+# IMPORTANT: Improving the model even more with RandomizedSearchCV
+
+from sklearn.model_selection import RandomizedSearchCV
+from scipy import stats
+
+parameters = {
+    'C': stats.uniform(0.1, 10),
+    'kernel': ['poly', 'rbf', 'sigmoid'],
+    'degree': [3, 4, 5, 6],
+    'gamma': stats.uniform(0.1, 10)
+}
+
+rs_model = RandomizedSearchCV(SVC(), parameters, cv=5, refit=True, verbose=4) # will refit the model based on based parameters found
+
+rs_model.fit(scaled_X_train, y_train)
+print(rs_model.best_params_)
+
+rs_predictions = rs_model.predict(scaled_X_test)
+print(classification_report(y_test, rs_predictions))
